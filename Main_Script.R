@@ -1,9 +1,29 @@
 # Uploading the Ferrier & Navvarro dataset
 data <- read.csv("Dataset/DATA_MACRO_FN.csv")
 
-head(data)
+GDP           <- ts(data$GDP, start = c(1913, 2), frequency = 4)
+GOV           <- ts(data$GOV, start = c(1913, 2), frequency = 4)
+NEWS          <- ts(data$NEWS, start = c(1913, 2), frequency = 4)
+UNEMP         <- ts(data$UNEMP, start = c(1913, 2), frequency = 4)
+TB3           <- ts(data$TB3, start = c(1913, 2), frequency = 4)
+RDEF          <- ts(data$RDEF, start = c(1913, 2), frequency = 4)
+MTR           <- ts(data$MTR, start = c(1913, 2), frequency = 4)
+ATR           <- ts(data$ATR, start = c(1913, 2), frequency = 4)
+MITR          <- ts(data$MITR, start = c(1913, 2), frequency = 4)
+AITR          <- ts(data$AITR, start = c(1913, 2), frequency = 4)
+ATR_PSZ       <- ts(data$ATR_PSZ, start = c(1913, 2), frequency = 4)
+ATR_B90_PSZ   <- ts(data$ATR_B90_PSZ, start = c(1913, 2), frequency = 4)
+ATR_B50_PSZ   <- ts(data$ATR_B50_PSZ, start = c(1913, 2), frequency = 4)
+ATR_T10_PSZ   <- ts(data$ATR_T10_PSZ, start = c(1913, 2), frequency = 4)
+ATR_T05_PSZ   <- ts(data$ATR_T05_PSZ, start = c(1913, 2), frequency = 4)
+ATR_T01_PSZ   <- ts(data$ATR_T01_PSZ, start = c(1913, 2), frequency = 4)
+psoc          <- ts(data$psoc, start = c(1913, 2), frequency = 4)
+pfed          <- ts(data$pfed, start = c(1913, 2), frequency = 4)
+rinvfx        <- ts(data$rinvfx, start = c(1913, 2), frequency = 4)
+rnri          <- ts(data$rnri, start = c(1913, 2), frequency = 4)
+wgenofarm     <- ts(data$wgenofarm, start = c(1913, 2), frequency = 4)
+hours         <- ts(data$hours, start = c(1913, 2), frequency = 4)
 
-# ok, scriviamo un commento a caso per 
-# vedere se riesco a vedere le verisoni dello script nel tempo
 
-# lallero
+plot(GDP)
+grid()
