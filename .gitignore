@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+Dataset/
+Literature/
+.DS_Store
