@@ -5,3 +5,5 @@ head(data)
 
 # ok, scriviamo un commento a caso per 
 # vedere se riesco a vedere le verisoni dello script nel tempo
+
+# lallero
