@@ -48,7 +48,7 @@ BP           <- ts(BP, start = c(1913, 2), frequency = 4)
 plot(BP)
 plot(NEWS)
 
-# I order to build my Smooth Transaction Local Projection estimator I need to build the
+# I order to build my Smooth Transition Local Projection estimator I need to build the
 # "State" variable, the gamma (referring to the paper names)
 
 gamma_raw = (MTR - ATR) / (1-ATR)
@@ -56,12 +56,14 @@ plot(gamma_raw)
 
 # after having created my state variable I need to standardize it, in order to obtain Z scores
 # will take values between -3 +3, this is good for our buil in logistic function in the 
-# smooth transaction LP
+# smooth transition LP
 gamma = (gamma_raw - mean(gamma_raw, na.rm = T)) / sd(gamma_raw, na.rm = T)
 plot(gamma)
 
 # Now I Create the Logistic Transition Variable (F_z)
 # We use gamma = 3 as the smoothness parameter (standard in literature)
+#### PER ADESSO LASCIO COSì, IN SEGUITO CERCO DI USARE Granger and Terasvirta (1993) 
+# LOGISTIC FUNCTION PER LO SMOOTH TRANSITION
 gamma_param <- 3
 F_z <- exp(-gamma_param * gamma) / (1 + exp(-gamma_param * gamma))
 
@@ -147,13 +149,17 @@ LP_data <- ts.intersect(
   GDP,
   GOV,
   
+  # In logs variabbles 
+  gdp,
+  gov,
+  
   # the Instruments
   BP,
   RZ = NEWS,
   
   # the state variable
   gamma_z = gamma, # standardized gamma
-  F_z = F_z,        # progressive regime weight (0,1)
+#  F_z = F_z,        # progressive regime weight (0,1) Logistic function
   
   # GDP growth rates lags
   gdp_d_1, gdp_d_2, gdp_d_3, gdp_d_4,
@@ -171,3 +177,59 @@ LP_data <- ts.intersect(
   t, t_2, t_3, t_4
 )
 
+##############################
+# Now is the tiem to build the STLP-IV
+# unfortunatly the lpirfs package doesn't work with over identification
+# problem, this that I'm computing are elasticities, later I have to re convert 
+# them in dollar terms
+library(dynlm)
+library(lpirfs)
+
+
+df_lp <- data.frame(LP_data)
+
+library(lpirfs)
+
+# 1. Prepare Data
+df_lp <- as.data.frame(LP_data)
+
+# 2. Controls List (Your manual lags + trends)
+controls_list <- c("gdp_d_1", "gdp_d_2", "gdp_d_3", "gdp_d_4",
+                   "gdp_d_5", "gdp_d_6", "gdp_d_7", "gdp_d_8",
+                   "gov_d_1", "gov_d_2", "gov_d_3", "gov_d_4",
+                   "gov_d_5", "gov_d_6", "gov_d_7", "gov_d_8",
+                   "MTR_1",   "MTR_2",   "MTR_3",   "MTR_4",
+                   "MTR_5",   "MTR_6",   "MTR_7",   "MTR_8",
+                   "t", "t_2", "t_3", "t_4")
+
+# 3. Run STLP-IV (Using contemp_data)
+results_stlp <- lp_nl_iv(
+  
+  # --- Variables ---
+  endog_data      = df_lp[, "gdp", drop = FALSE],
+  lags_endog_nl   = 0,                             # Keep this at 0
+  
+  shock           = df_lp[, "gov", drop = FALSE],
+  instr           = df_lp[, "RZ",  drop = FALSE],
+  
+  # --- Controls ---
+  # FIX: Move your controls to 'contemp_data' so the package uses them "as is"
+  contemp_data    = df_lp[, controls_list],
+  
+  # --- Smooth Transition ---
+  switching       = df_lp[, "gamma_z", drop = FALSE],
+  use_logistic    = TRUE,
+  gamma           = 3,
+  lag_switching   = FALSE,
+  
+  # --- Settings ---
+  use_hp          = FALSE,
+  lambda          = NaN,
+  trend           = 0,
+  cumul_mult      = TRUE,
+  confint         = 1.96,
+  hor             = 20
+)
+
+# 4. Plot
+plot(results_stlp)
