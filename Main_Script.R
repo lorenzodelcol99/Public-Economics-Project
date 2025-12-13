@@ -27,3 +27,4 @@ hours         <- ts(data$hours, start = c(1913, 2), frequency = 4)
 
 plot(GDP)
 grid()
+plot(GOV)
