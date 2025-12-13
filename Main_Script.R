@@ -4,26 +4,170 @@ data <- read.csv("Dataset/DATA_MACRO_FN.csv")
 GDP           <- ts(data$GDP, start = c(1913, 2), frequency = 4)
 GOV           <- ts(data$GOV, start = c(1913, 2), frequency = 4)
 NEWS          <- ts(data$NEWS, start = c(1913, 2), frequency = 4)
-UNEMP         <- ts(data$UNEMP, start = c(1913, 2), frequency = 4)
-TB3           <- ts(data$TB3, start = c(1913, 2), frequency = 4)
-RDEF          <- ts(data$RDEF, start = c(1913, 2), frequency = 4)
 MTR           <- ts(data$MTR, start = c(1913, 2), frequency = 4)
 ATR           <- ts(data$ATR, start = c(1913, 2), frequency = 4)
-MITR          <- ts(data$MITR, start = c(1913, 2), frequency = 4)
-AITR          <- ts(data$AITR, start = c(1913, 2), frequency = 4)
-ATR_PSZ       <- ts(data$ATR_PSZ, start = c(1913, 2), frequency = 4)
-ATR_B90_PSZ   <- ts(data$ATR_B90_PSZ, start = c(1913, 2), frequency = 4)
-ATR_B50_PSZ   <- ts(data$ATR_B50_PSZ, start = c(1913, 2), frequency = 4)
-ATR_T10_PSZ   <- ts(data$ATR_T10_PSZ, start = c(1913, 2), frequency = 4)
-ATR_T05_PSZ   <- ts(data$ATR_T05_PSZ, start = c(1913, 2), frequency = 4)
-ATR_T01_PSZ   <- ts(data$ATR_T01_PSZ, start = c(1913, 2), frequency = 4)
-psoc          <- ts(data$psoc, start = c(1913, 2), frequency = 4)
-pfed          <- ts(data$pfed, start = c(1913, 2), frequency = 4)
-rinvfx        <- ts(data$rinvfx, start = c(1913, 2), frequency = 4)
-rnri          <- ts(data$rnri, start = c(1913, 2), frequency = 4)
-wgenofarm     <- ts(data$wgenofarm, start = c(1913, 2), frequency = 4)
-hours         <- ts(data$hours, start = c(1913, 2), frequency = 4)
 
 
+ts_data = ts(data, start = c(1913, 2), frequency = 4)
+
+# creating the BP Shock
+
+library(dplyr)
+data_reg <- data %>%
+  mutate(
+    # Logs
+    ln_GOV = log(GOV),
+    ln_GDP = log(GDP),
+    
+    # Growth Rates (Differences)
+    d_gov = c(NA, diff(ln_GOV)),
+    d_gdp = c(NA, diff(ln_GDP)),
+    
+    # Create Lag Columns explicitly (lags 1 to 4)
+    # This makes the regression line much cleaner later
+    gov_L1 = dplyr::lag(d_gov, 1),
+    gov_L2 = dplyr::lag(d_gov, 2),
+    gov_L3 = dplyr::lag(d_gov, 3),
+    gov_L4 = dplyr::lag(d_gov, 4),
+    
+    gdp_L1 = dplyr::lag(d_gdp, 1),
+    gdp_L2 = dplyr::lag(d_gdp, 2),
+    gdp_L3 = dplyr::lag(d_gdp, 3),
+    gdp_L4 = dplyr::lag(d_gdp, 4)
+  )
+
+BP_model <- lm(d_gov ~ gov_L1 + gov_L2 + gov_L3 + gov_L4 + 
+                 gdp_L1 + gdp_L2 + gdp_L3 + gdp_L4, 
+               data = data_reg,
+               na.action = na.exclude)
+
+# storing the Shock
+BP <- residuals(BP_model)
+BP           <- ts(BP, start = c(1913, 2), frequency = 4)
+
+plot(BP)
+plot(NEWS)
+
+# I order to build my Smooth Transaction Local Projection estimator I need to build the
+# "State" variable, the gamma (referring to the paper names)
+
+gamma_raw = (MTR - ATR) / (1-ATR)
+plot(gamma_raw)
+
+# after having created my state variable I need to standardize it, in order to obtain Z scores
+# will take values between -3 +3, this is good for our buil in logistic function in the 
+# smooth transaction LP
+gamma = (gamma_raw - mean(gamma_raw, na.rm = T)) / sd(gamma_raw, na.rm = T)
+plot(gamma)
+
+# Now I Create the Logistic Transition Variable (F_z)
+# We use gamma = 3 as the smoothness parameter (standard in literature)
+gamma_param <- 3
+F_z <- exp(-gamma_param * gamma) / (1 + exp(-gamma_param * gamma))
+
+####### Creating the regressors for my specification
+
+# What I need
+# Delta Yt+h (dependent variable)
+# Delta Gt+h (endogenous variable that need to be instumented)
+# Instruments BP and RZ
+# State Variable: Progressivity variable (gamma)
+# Controls: lagged of growth rates of log GDP, lagged growth rates of gov, 
+# lagged Tax Rates (MTR), and non linear and non linear time trends (t,t^2,t^3,t^4)
+
+# Building the controls 
+
+# GDP
 plot(GDP)
-grid()
+# Transforming GDP in logs
+gdp <- log(GDP) 
+plot(gdp)
+# Taking the First difference of Log GDP
+gdp_d <- diff(log(GDP))
+plot(gdp_d)
+
+## GOV
+
+plot(GOV)
+# transforming the GOV in logs
+gov <- log(GOV)
+plot(gov)
+
+# Taking first differences of the log GOV
+gov_d <- diff(log(GOV))
+plot(gov_d)
+
+# now I want to create 8 lags of the first difference of log GDP
+gdp_d_1 <- stats::lag(gdp_d, -1)
+gdp_d_2 <- stats::lag(gdp_d, -2)
+gdp_d_3 <- stats::lag(gdp_d, -3)
+gdp_d_4 <- stats::lag(gdp_d, -4)
+gdp_d_5 <- stats::lag(gdp_d, -5)
+gdp_d_6 <- stats::lag(gdp_d, -6)
+gdp_d_7 <- stats::lag(gdp_d, -7)
+gdp_d_8 <- stats::lag(gdp_d, -8)
+
+# creating the lags for the first difference of the GOV
+gov_d_1 <- stats::lag(gov_d, -1)
+gov_d_2 <- stats::lag(gov_d, -2)
+gov_d_3 <- stats::lag(gov_d, -3)
+gov_d_4 <- stats::lag(gov_d, -4)
+gov_d_5 <- stats::lag(gov_d, -5)
+gov_d_6 <- stats::lag(gov_d, -6)
+gov_d_7 <- stats::lag(gov_d, -7)
+gov_d_8 <- stats::lag(gov_d, -8)
+
+# creating the lags for the Tax Rate MTR
+MTR_1 <- stats::lag(MTR, -1)
+MTR_2 <- stats::lag(MTR, -2)
+MTR_3 <- stats::lag(MTR, -3)
+MTR_4 <- stats::lag(MTR, -4)
+MTR_5 <- stats::lag(MTR, -5)
+MTR_6 <- stats::lag(MTR, -6)
+MTR_7 <- stats::lag(MTR, -7)
+MTR_8 <- stats::lag(MTR, -8)
+
+
+### Creating the time trends
+T <- length(GDP)
+time_index <- ts(1:T, start = c(1913, 1), frequency = 4)
+
+t   <- time_index
+t_2 <- time_index^2
+t_3 <- time_index^3
+t_4 <- time_index^4
+
+
+#### Combining everything in a dataset with all the variable that I need for my STLP_IV
+
+# adding the GDP and GOV in levels as they are needed to create the multipliers variables
+LP_data <- ts.intersect(
+  
+  # In levels variables
+  GDP,
+  GOV,
+  
+  # the Instruments
+  BP,
+  RZ = NEWS,
+  
+  # the state variable
+  gamma_z = gamma, # standardized gamma
+  F_z = F_z,        # progressive regime weight (0,1)
+  
+  # GDP growth rates lags
+  gdp_d_1, gdp_d_2, gdp_d_3, gdp_d_4,
+  gdp_d_5, gdp_d_6, gdp_d_7, gdp_d_8,
+  
+  # GOV growth rates lags
+  gov_d_1, gov_d_2, gov_d_3, gov_d_4,
+  gov_d_5, gov_d_6, gov_d_7, gov_d_8,
+  
+  # Tax rate lags
+  MTR_1, MTR_2, MTR_3, MTR_4,
+  MTR_5, MTR_6, MTR_7, MTR_8,
+  
+  # time trends
+  t, t_2, t_3, t_4
+)
+
