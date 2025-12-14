@@ -49,23 +49,17 @@ plot(BP)
 plot(NEWS)
 
 # I order to build my Smooth Transition Local Projection estimator I need to build the
-# "State" variable, the gamma (referring to the paper names)
+# "State" variable, the gamma (referring to the Navarro's paper names)
 
 gamma_raw = (MTR - ATR) / (1-ATR)
 plot(gamma_raw)
 
 # after having created my state variable I need to standardize it, in order to obtain Z scores
-# will take values between -3 +3, this is good for our buil in logistic function in the 
+# will take values between -3 +3, this is good for our build in logistic function in the 
 # smooth transition LP
 gamma = (gamma_raw - mean(gamma_raw, na.rm = T)) / sd(gamma_raw, na.rm = T)
 plot(gamma)
 
-# Now I Create the Logistic Transition Variable (F_z)
-# We use gamma = 3 as the smoothness parameter (standard in literature)
-#### PER ADESSO LASCIO COSì, IN SEGUITO CERCO DI USARE Granger and Terasvirta (1993) 
-# LOGISTIC FUNCTION PER LO SMOOTH TRANSITION
-gamma_param <- 3
-F_z <- exp(-gamma_param * gamma) / (1 + exp(-gamma_param * gamma))
 
 ####### Creating the regressors for my specification
 
@@ -76,6 +70,13 @@ F_z <- exp(-gamma_param * gamma) / (1 + exp(-gamma_param * gamma))
 # State Variable: Progressivity variable (gamma)
 # Controls: lagged of growth rates of log GDP, lagged growth rates of gov, 
 # lagged Tax Rates (MTR), and non linear and non linear time trends (t,t^2,t^3,t^4)
+
+# I'm not going to create the dependent and endogenous variables as are written
+#in the Navarro's paper. --> In the first model specification I will use log GDP
+# and log GOV, hence I will obtain elasticities of the multipliers.
+# This meand that I will need to re convert the multipliers in dollars
+# I will need to scale them
+
 
 # Building the controls 
 
@@ -159,7 +160,6 @@ LP_data <- ts.intersect(
   
   # the state variable
   gamma_z = gamma, # standardized gamma
-#  F_z = F_z,        # progressive regime weight (0,1) Logistic function
   
   # GDP growth rates lags
   gdp_d_1, gdp_d_2, gdp_d_3, gdp_d_4,
@@ -178,10 +178,12 @@ LP_data <- ts.intersect(
 )
 
 ##############################
+
 # Now is the tiem to build the STLP-IV
 # unfortunatly the lpirfs package doesn't work with over identification
 # problem, this that I'm computing are elasticities, later I have to re convert 
 # them in dollar terms
+
 library(dynlm)
 library(lpirfs)
 
@@ -204,11 +206,11 @@ controls_list <- c("gdp_d_1", "gdp_d_2", "gdp_d_3", "gdp_d_4",
 
 # 3. Run STLP-IV
 
-results_stlp <- lp_nl_iv(
+STLP_IV <- lp_nl_iv(
   
   # --- Variables ---
   endog_data      = df_lp[, "gdp", drop = FALSE],
-  lags_endog_nl   = 0,                             # Keep this at 0
+  lags_endog_nl   = 0,                           
   
   shock           = df_lp[, "gov", drop = FALSE],
   instr           = df_lp[, "RZ",  drop = FALSE],
@@ -231,7 +233,12 @@ results_stlp <- lp_nl_iv(
   hor             = 20.   # Number of h Horizon of the projecting
 )
 
+# Summary of the STLP-IV
+summary(STLP_IV)
+
 # Think Locally.. Project Globally!
 
 # 4. Plot
-plot(results_stlp)
+plot(STLP_IV)
+
+
