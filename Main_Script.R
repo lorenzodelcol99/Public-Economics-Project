@@ -188,12 +188,12 @@ library(dynlm)
 library(lpirfs)
 
 
-df_lp <- data.frame(LP_data)
+LP_FN_dates <- window(LP_data, end = c(2006, 4))
 
 library(lpirfs)
 
 # 1. Prepare Data
-df_lp <- as.data.frame(LP_data)
+df_lp <- as.data.frame(LP_FN_dates)
 
 # 2. Controls List (Your manual lags + trends)
 controls_list <- c("gdp_d_1", "gdp_d_2", "gdp_d_3", "gdp_d_4",
@@ -230,15 +230,139 @@ STLP_IV <- lp_nl_iv(
   trend           = 0,
   cumul_mult      = TRUE,
   confint         = 1.96, # Confidence Interval
-  hor             = 20.   # Number of h Horizon of the projecting
+  hor             = 20   # Number of h Horizon of the projecting
 )
 
 # Summary of the STLP-IV
 summary(STLP_IV)
 
-# Think Locally.. Project Globally!
+
 
 # 4. Plot
 plot(STLP_IV)
+# Ok are elasticities, but they are perfect in signs and significances!
 
+# Now I want to obtain the Multipliers in dollars!
+
+# for doing so, I need the GDP/GOV ratio to convert Elasticity to Dollar Multiplier
+scaling_factor_GDP_GOV <- mean(LP_FN_dates[, "GDP"] / LP_FN_dates[, "GOV"], na.rm = T)
+
+### Plotting the Dollar Multipliers
+
+##################      Think Locally.. Project Globally!      ##################
+
+library(ggplot2)
+
+# Now I need to collect the parameters of the IRF of the 
+#                   Regime 1 (Low-Progressivity)
+
+low_prog_df <- data.frame(
+  Horizon = 0:(length(STLP_IV$irf_s1_mean) - 1),
+  Mean    = as.numeric(STLP_IV$irf_s1_mean) * scaling_factor_GDP_GOV, # Mean --> the Beta coefficients
+  Lower   = as.numeric(STLP_IV$irf_s1_low)  * scaling_factor_GDP_GOV, # Low  --> the lower bound of the 95% CI
+  Upper   = as.numeric(STLP_IV$irf_s1_up)   * scaling_factor_GDP_GOV, # High --> the upper bound of the 95% CI
+  Regime  = "Low Progressivity"
+)
+
+#                   Regime 2 (High-Progressivity)
+
+high_prog_df <- data.frame(
+  Horizon = 0:(length(STLP_IV$irf_s2_mean) - 1),
+  Mean    = as.numeric(STLP_IV$irf_s2_mean) * scaling_factor_GDP_GOV,
+  Lower   = as.numeric(STLP_IV$irf_s2_low)  * scaling_factor_GDP_GOV,
+  Upper   = as.numeric(STLP_IV$irf_s2_up)   * scaling_factor_GDP_GOV,
+  Regime  = "High Progressivity"
+)
+
+# collecting everything in one "data frame"
+scaled_multipliers_2regimes <- bind_rows(low_prog_df, high_prog_df)
+
+
+# Plotting the two regimes multipliers into a single one image
+
+ggplot(scaled_multipliers_2regimes, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+  # Plotting the Zero Line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Plotting 95% Confidence Intervals
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
+  # Plotting the Betas (mean) Lines 
+  geom_line(size = 1.2) + 
+  # Customing the colors (Blue High prog, Red Low prog)
+  scale_color_manual(values = c("High Progressivity" = "blue", "Low Progressivity" = "red")) + 
+  scale_fill_manual (values = c("High Progressivity" = "lightblue", "Low Progressivity" = "orangered")) +
+  # Lables and Titles
+  labs(
+    title    = "Government Spending Multipliers in $",
+    subtitle = "Smooth Transition LP-IV",
+    y        = "Dollar Change in GDP / Dollar Change in Spending",
+    x        = "Horizon, Quarters",
+    color    = "Regime\n(Shaded: 95% Newey-West CI)",
+    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
+    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
+    ) + 
+  # Theme 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(face = "bold")
+)
+
+
+#### High Progressivity Multiplier
+
+ggplot(high_prog_df, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+  # Plotting the Zero Line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Plotting 95% Confidence Intervals
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
+  # Plotting the Betas (mean) Lines 
+  geom_line(size = 1.2) + 
+  # Customing the colors (Blue High prog, Red Low prog)
+  scale_color_manual(values = c("High Progressivity" = "blue")) + 
+  scale_fill_manual (values = c("High Progressivity" = "lightblue")) +
+  # Lables and Titles
+  labs(
+    title    = "Government Spending Multipliers in $: HIGH PROGRESSIVITY",
+    subtitle = "Smooth Transition LP-IV",
+    y        = "Dollar Change in GDP / Dollar Change in Spending",
+    x        = "Horizon, Quarters",
+    color    = "Regime\n(Shaded: 95% Newey-West CI)",
+    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
+    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
+  ) + 
+  # Theme 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(face = "bold")
+)
+
+#### Low Progressivity Multiplier
+
+ggplot(low_prog_df, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+  # Plotting the Zero Line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Plotting 95% Confidence Intervals
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
+  # Plotting the Betas (mean) Lines 
+  geom_line(size = 1.2) + 
+  # Customing the colors (Blue High prog, Red Low prog)
+  scale_color_manual(values = c("Low Progressivity" = "red")) + 
+  scale_fill_manual (values = c("Low Progressivity" = "orangered")) +
+  # Lables and Titles
+  labs(
+    title    = "Government Spending Multipliers in $: LOW PROGRESSIVITY",
+    subtitle = "Smooth Transition LP-IV",
+    y        = "Dollar Change in GDP / Dollar Change in Spending",
+    x        = "Horizon, Quarters",
+    color    = "Regime\n(Shaded: 95% Newey-West CI)",
+    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
+    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
+  ) + 
+  # Theme 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(face = "bold")
+)
 
