@@ -289,7 +289,7 @@ ggplot(scaled_multipliers_2regimes, aes(x = Horizon, y = Mean, color = Regime, f
   geom_line(size = 1.2) + 
   # Customing the colors (Blue High prog, Red Low prog)
   scale_color_manual(values = c("High Progressivity" = "blue", "Low Progressivity" = "red")) + 
-  scale_fill_manual (values = c("High Progressivity" = "lightblue", "Low Progressivity" = "orangered")) +
+  scale_fill_manual (values = c("High Progressivity" = "royalblue2", "Low Progressivity" = "orangered")) +
   # Lables and Titles
   labs(
     title    = "Government Spending Multipliers in $",
@@ -319,7 +319,7 @@ ggplot(high_prog_df, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) 
   geom_line(size = 1.2) + 
   # Customing the colors (Blue High prog, Red Low prog)
   scale_color_manual(values = c("High Progressivity" = "blue")) + 
-  scale_fill_manual (values = c("High Progressivity" = "lightblue")) +
+  scale_fill_manual (values = c("High Progressivity" = "royalblue2")) +
   # Lables and Titles
   labs(
     title    = "Government Spending Multipliers in $: HIGH PROGRESSIVITY",
