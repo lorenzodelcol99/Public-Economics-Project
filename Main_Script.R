@@ -202,7 +202,8 @@ controls_list <- c("gdp_d_1", "gdp_d_2", "gdp_d_3", "gdp_d_4",
                    "MTR_5",   "MTR_6",   "MTR_7",   "MTR_8",
                    "t", "t_2", "t_3", "t_4")
 
-# 3. Run STLP-IV (Using contemp_data)
+# 3. Run STLP-IV
+
 results_stlp <- lp_nl_iv(
   
   # --- Variables ---
@@ -213,7 +214,6 @@ results_stlp <- lp_nl_iv(
   instr           = df_lp[, "RZ",  drop = FALSE],
   
   # --- Controls ---
-  # FIX: Move your controls to 'contemp_data' so the package uses them "as is"
   contemp_data    = df_lp[, controls_list],
   
   # --- Smooth Transition ---
@@ -227,9 +227,11 @@ results_stlp <- lp_nl_iv(
   lambda          = NaN,
   trend           = 0,
   cumul_mult      = TRUE,
-  confint         = 1.96,
-  hor             = 20
+  confint         = 1.96, # Confidence Interval
+  hor             = 20.   # Number of h Horizon of the projecting
 )
+
+# Think Locally.. Project Globally!
 
 # 4. Plot
 plot(results_stlp)
