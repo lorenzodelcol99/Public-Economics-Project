@@ -10,6 +10,8 @@ ATR           <- ts(data$ATR, start = c(1913, 2), frequency = 4)
 
 ts_data = ts(data, start = c(1913, 2), frequency = 4)
 
+### Old BP shock, the "Naive One"
+
 # creating the BP Shock
 
 library(dplyr)
@@ -46,7 +48,100 @@ BP <- residuals(BP_model)
 BP           <- ts(BP, start = c(1913, 2), frequency = 4)
 
 plot(BP)
-plot(NEWS)
+
+# A shorter way to do the same stuff
+library(dynlm)
+# If I use the library(dynlm) package, I can directly estimate this Dinamic Linear Regression
+# in a single row
+# --> d() = first difference --> L( d() , 1:4) from t to t-4 using the Lag operator
+
+#
+bp_model_raw <- dynlm(d(log(GOV)) ~ L(d(log(GOV)), 1:4) + L(d(log(GDP)), 1:4), 
+                      data = ts_data)
+
+# Store the raw residuals
+BP_Raw <- residuals(bp_model_raw)
+
+plot(BP_Raw)
+
+############################# Creating the Clean BP Shock ################################
+library(dynlm)
+
+# I order to "clean" the BP shock, I need to "regress" the BP_raw shock over the "NEWS" RZ shock
+# and take the residuals --> which are going to be "all the variability of the BP shock that
+# do not correlates with the NEWS shock
+# those residuals are going to be my Clean_BP shock
+
+# ok before we need to 
+
+# 1. Create a temporary dataset aligning BP_Raw and RZ
+# ts.intersect drops non-overlapping dates, ensuring 1914:Q3 matches 1914:Q3
+cleaning_data <- ts.intersect(BP_Raw, RZ = ts_data[,"NEWS"])
+
+# 2. Run the Cleaning Regression on this ALIGNED data
+# We regress BP on Current News + 4 Lags of News
+# Note: We use 'data = cleaning_data' to ensure it uses the aligned series
+BP_Clean_Model <- dynlm(BP_Raw ~ RZ + L(RZ, 1:4), data = cleaning_data)
+
+# 3. Extract the Clean Shock (Residuals)
+BP_Clean <- residuals(BP_Clean_Model)
+
+# 4. Visual Check
+par(mfrow=c(1,1))
+plot.ts(BP_Raw, col = "red", lwd = 2, ylab = "Shock", 
+        main = "Orthogonalization Effect: Raw (Red) vs Clean (Blue)")
+lines(BP_Clean, col = "blue", lwd = 1)
+#legend("topright", legend=c("Raw BP", "Clean BP"), col=c("red", "blue"), lty=1)
+
+# -------------------------------------------------------------------------
+# PREPARING LP_DATA (Updated)
+# -------------------------------------------------------------------------
+# Now we use the aligned BP_Clean in the final intersection
+LP_data <- ts.intersect(
+  GDP, GOV, gdp, gov,
+  BP_Clean,          # <--- The correctly aligned clean shock
+  RZ = RZ,
+  gamma_z = gamma,
+  gdp_d_1, gdp_d_2, gdp_d_3, gdp_d_4, gdp_d_5, gdp_d_6, gdp_d_7, gdp_d_8,
+  gov_d_1, gov_d_2, gov_d_3, gov_d_4, gov_d_5, gov_d_6, gov_d_7, gov_d_8,
+  MTR_1, MTR_2, MTR_3, MTR_4, MTR_5, MTR_6, MTR_7, MTR_8,
+  t, t_2, t_3, t_4
+)
+
+plot(BP_Clean)
+
+par(mfrow=c(2,1))
+plot.ts(BP_Raw, main="Raw BP Shock (Raw)", col="red", ylab="")
+plot.ts(BP_Clean, main="Orthogonalized BP Shock (Clean)", col="blue", ylab="")
+
+
+par(mfrow=c(1,1))
+# 2. Plot the "Raw" (Dirty) Shock first in RED
+# We set a generous y-axis limit (ylim) to make sure both lines fit
+plot.ts(BP_Raw, 
+        col = "red", 
+        lwd = 3.5,
+        ylab = "% of GDP / Shock Size",
+        main = "The Effect of Orthogonalization: Raw vs. Clean BP Shock")
+
+# 3. Add the "Clean" (Orthogonalized) Shock in BLUE
+# lines() automatically matches the dates if they are ts objects
+lines(BP_Clean, col = "blue", lwd = 1.5)
+
+# 4. Add a grid and legend for clarity
+grid()
+legend("topright", 
+       legend = c("Raw BP (Contains Old News)", "Clean BP (Pure Surprise)"),
+       col = c("red", "blue"), 
+       lty = 1, 
+       lwd = 1.5,
+       bg = "white")
+
+
+### Ok now I want to see if the if the STLP-IV give different results with the Clean BP
+
+# Hence I plug here the previous part of the code
+# --> 
 
 # I order to build my Smooth Transition Local Projection estimator I need to build the
 # "State" variable, the gamma (referring to the Navarro's paper names)
@@ -59,24 +154,6 @@ plot(gamma_raw)
 # smooth transition LP
 gamma = (gamma_raw - mean(gamma_raw, na.rm = T)) / sd(gamma_raw, na.rm = T)
 plot(gamma)
-
-
-####### Creating the regressors for my specification
-
-# What I need
-# Delta Yt+h (dependent variable)
-# Delta Gt+h (endogenous variable that need to be instumented)
-# Instruments BP and RZ
-# State Variable: Progressivity variable (gamma)
-# Controls: lagged of growth rates of log GDP, lagged growth rates of gov, 
-# lagged Tax Rates (MTR), and non linear and non linear time trends (t,t^2,t^3,t^4)
-
-# I'm not going to create the dependent and endogenous variables as are written
-#in the Navarro's paper. --> In the first model specification I will use log GDP
-# and log GOV, hence I will obtain elasticities of the multipliers.
-# This meand that I will need to re convert the multipliers in dollars
-# I will need to scale them
-
 
 # Building the controls 
 
@@ -155,8 +232,8 @@ LP_data <- ts.intersect(
   gov,
   
   # the Instruments
-  BP,
-  RZ = NEWS,
+  BP_Clean,
+  RZ = RZ,
   
   # the state variable
   gamma_z = gamma, # standardized gamma
@@ -204,220 +281,7 @@ controls_list <- c("gdp_d_1", "gdp_d_2", "gdp_d_3", "gdp_d_4",
                    "MTR_5",   "MTR_6",   "MTR_7",   "MTR_8",
                    "t", "t_2", "t_3", "t_4")
 
-# 3. Run STLP-IV
-
-STLP_IV <- lp_nl_iv(
-  
-  # --- Variables ---
-  endog_data      = df_lp[, "gdp", drop = FALSE],
-  lags_endog_nl   = 0,                           
-  
-  shock           = df_lp[, "gov", drop = FALSE],
-  instr           = df_lp[, "RZ",  drop = FALSE],
-  
-  # --- Controls ---
-  contemp_data    = df_lp[, controls_list],
-  
-  # --- Smooth Transition ---
-  switching       = df_lp[, "gamma_z", drop = FALSE],
-  use_logistic    = TRUE,
-  gamma           = 3,
-  lag_switching   = FALSE,
-  
-  # --- Settings ---
-  use_hp          = FALSE,
-  lambda          = NaN,
-  trend           = 0,
-  cumul_mult      = TRUE,
-  confint         = 1.96, # Confidence Interval
-  hor             = 20   # Number of h Horizon of the projecting
-)
-
-# Summary of the STLP-IV
-summary(STLP_IV)
-
-
-
-# 4. Plot
-plot(STLP_IV)
-# Ok are elasticities, but they are perfect in signs and significances!
-
-# Now I want to obtain the Multipliers in dollars!
-
-# for doing so, I need the GDP/GOV ratio to convert Elasticity to Dollar Multiplier
-scaling_factor_GDP_GOV <- mean(LP_FN_dates[, "GDP"] / LP_FN_dates[, "GOV"], na.rm = T)
-
-### Plotting the Dollar Multipliers
-
-##################      Think Locally.. Project Globally!      ##################
-
-library(ggplot2)
-
-# Now I need to collect the parameters of the IRF of the 
-#                   Regime 1 (Low-Progressivity)
-
-low_prog_df <- data.frame(
-  Horizon = 0:(length(STLP_IV$irf_s1_mean) - 1),
-  Mean    = as.numeric(STLP_IV$irf_s1_mean) * scaling_factor_GDP_GOV, # Mean --> the Beta coefficients
-  Lower   = as.numeric(STLP_IV$irf_s1_low)  * scaling_factor_GDP_GOV, # Low  --> the lower bound of the 95% CI
-  Upper   = as.numeric(STLP_IV$irf_s1_up)   * scaling_factor_GDP_GOV, # High --> the upper bound of the 95% CI
-  Regime  = "Low Progressivity"
-)
-
-#                   Regime 2 (High-Progressivity)
-
-high_prog_df <- data.frame(
-  Horizon = 0:(length(STLP_IV$irf_s2_mean) - 1),
-  Mean    = as.numeric(STLP_IV$irf_s2_mean) * scaling_factor_GDP_GOV,
-  Lower   = as.numeric(STLP_IV$irf_s2_low)  * scaling_factor_GDP_GOV,
-  Upper   = as.numeric(STLP_IV$irf_s2_up)   * scaling_factor_GDP_GOV,
-  Regime  = "High Progressivity"
-)
-
-# collecting everything in one "data frame"
-scaled_multipliers_2regimes <- bind_rows(low_prog_df, high_prog_df)
-
-
-# Plotting the two regimes multipliers into a single one image
-
-ggplot(scaled_multipliers_2regimes, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
-  # Plotting the Zero Line
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
-  # Plotting 95% Confidence Intervals
-  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
-  # Plotting the Betas (mean) Lines 
-  geom_line(size = 1.2) + 
-  # Customing the colors (Blue High prog, Red Low prog)
-  scale_color_manual(values = c("High Progressivity" = "blue", "Low Progressivity" = "red")) + 
-  scale_fill_manual (values = c("High Progressivity" = "royalblue2", "Low Progressivity" = "orangered")) +
-  # Lables and Titles
-  labs(
-    title    = "Government Spending Multipliers in $",
-    subtitle = "Smooth Transition LP-IV",
-    y        = "Dollar Change in GDP / Dollar Change in Spending",
-    x        = "Horizon, Quarters",
-    color    = "Regime\n(Shaded: 95% Newey-West CI)",
-    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
-    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
-  ) + 
-  # Theme 
-  theme_minimal() + 
-  theme(
-    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
-    axis.title = element_text(face = "bold")
-)
-
-
-#### High Progressivity Multiplier
-
-ggplot(high_prog_df, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
-  # Plotting the Zero Line
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
-  # Plotting 95% Confidence Intervals
-  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
-  # Plotting the Betas (mean) Lines 
-  geom_line(size = 1.2) + 
-  # Customing the colors (Blue High prog, Red Low prog)
-  scale_color_manual(values = c("High Progressivity" = "blue")) + 
-  scale_fill_manual (values = c("High Progressivity" = "royalblue2")) +
-  # Lables and Titles
-  labs(
-    title    = "Government Spending Multipliers in $: HIGH PROGRESSIVITY",
-    subtitle = "Smooth Transition LP-IV",
-    y        = "Dollar Change in GDP / Dollar Change in Spending",
-    x        = "Horizon, Quarters",
-    color    = "Regime\n(Shaded: 95% Newey-West CI)",
-    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
-    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
-  ) + 
-  # Theme 
-  theme_minimal() + 
-  theme(
-    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
-    axis.title = element_text(face = "bold")
-  )
-
-#### Low Progressivity Multiplier
-
-ggplot(low_prog_df, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
-  # Plotting the Zero Line
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
-  # Plotting 95% Confidence Intervals
-  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
-  # Plotting the Betas (mean) Lines 
-  geom_line(size = 1.2) + 
-  # Customing the colors (Blue High prog, Red Low prog)
-  scale_color_manual(values = c("Low Progressivity" = "red")) + 
-  scale_fill_manual (values = c("Low Progressivity" = "orangered")) +
-  # Lables and Titles
-  labs(
-    title    = "Government Spending Multipliers in $: LOW PROGRESSIVITY",
-    subtitle = "Smooth Transition LP-IV",
-    y        = "Dollar Change in GDP / Dollar Change in Spending",
-    x        = "Horizon, Quarters",
-    color    = "Regime\n(Shaded: 95% Newey-West CI)",
-    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
-    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
-  ) + 
-  # Theme 
-  theme_minimal() + 
-  theme(
-    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
-    axis.title = element_text(face = "bold")
-  )
-
-# Trying to see if the dollar multipliers are correct
-# I want to check how Government Spending responds to the Shock in High and Low Progressivity
-
-
-STLP_GOV <- lp_nl_iv(
-  # --- CHANGE 1: Dependent Variable is now GOV ---
-  endog_data      = df_lp[, "gov", drop = FALSE], 
-  lags_endog_nl   = 0,                            
-  
-  # --- Everything else stays exactly the same ---
-  shock           = df_lp[, "gov", drop = FALSE],
-  instr           = df_lp[, "RZ",  drop = FALSE],
-  
-  contemp_data    = df_lp[, controls_list],
-  
-  switching       = df_lp[, "gamma_z", drop = FALSE],
-  use_logistic    = TRUE,
-  gamma           = 3,
-  lag_switching   = FALSE,
-  
-  use_hp          = FALSE,
-  lambda          = NaN,
-  trend           = 0,
-  cumul_mult      = TRUE,
-  confint         = 1.96,
-  hor             = 20
-)
-
-# -------------------------------------------------------------------------
-# PLOT THE SPENDING RESPONSE
-# -------------------------------------------------------------------------
-# We don't need to scale this by GDP/GOV because this is just % change in Gov
-plot(STLP_GOV)
-
-# this is seems good new, in both regimes the GOV spending rise after the shock 
-# and stays positive for a long time ( around 12-15 quarters)
-# This mean that the shock is persistent in time, is not just a single deviation
-# In this case Fiscal Policy is Spending Plan, is a stream of actions, and
-# those actions are respected
-# In addition, and at the same time as important as the "persistency" nature of the shock
-# the G spending behaves similarly in both the regimes (High and Low progressivity)
-
-
-
-
-######### Now I would like to do two different thins:
-# 1) Run the STLP-IV using the BP shock and check, if they exists, the differences whith
-# the one computed with the BZ shock
-
-# 2) Try to run the Over-Identified STLP-IV, and check the differences
-
-# -->
+# 3. Run STLP-IV with the CLEAN BP Instrument
 
 # 1) STLP-IV with BP Shock
 
@@ -429,7 +293,7 @@ STLP_IV_BP <- lp_nl_iv(
   lags_endog_nl   = 0,                           
   
   shock           = df_lp[, "gov", drop = FALSE],
-  instr           = df_lp[, "BP",  drop = FALSE],
+  instr           = df_lp[, "BP_Clean",  drop = FALSE],
   
   # --- Controls ---
   contemp_data    = df_lp[, controls_list],
@@ -449,6 +313,7 @@ STLP_IV_BP <- lp_nl_iv(
   hor             = 20   # Number of h Horizon of the projecting
 )
 
+scaling_factor_GDP_GOV <- mean(LP_FN_dates[, "GDP"] / LP_FN_dates[, "GOV"], na.rm = T)
 
 # Now I need to collect the parameters of the IRF of the 
 #                   Regime 1 (Low-Progressivity)
@@ -502,88 +367,15 @@ ggplot(scaled_multipliers_2regimes_BP, aes(x = Horizon, y = Mean, color = Regime
     axis.title = element_text(face = "bold")
   )
 
-# this gives the exact OPPOSIT result wrt the other, and wrt the Ferriere & Navarro paper
-# --> Interpretation: Low progressivity funded Goverment spending increases have positive and significant  multipliers
-# and on the other hand the high progressivity ones are statistically equal to 0
 
-# Why I have obtain this result?
+# is not working. let's see if with the over identified setup it works
 
-
-
-#### High Progressivity Multiplier
-
-ggplot(high_prog_df_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
-  # Plotting the Zero Line
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
-  # Plotting 95% Confidence Intervals
-  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
-  # Plotting the Betas (mean) Lines 
-  geom_line(size = 1.2) + 
-  # Customing the colors (Blue High prog, Red Low prog)
-  scale_color_manual(values = c("High Progressivity" = "blue")) + 
-  scale_fill_manual (values = c("High Progressivity" = "royalblue2")) +
-  # Lables and Titles
-  labs(
-    title    = "Government Spending Multipliers in $: HIGH PROGRESSIVITY",
-    subtitle = "Smooth Transition LP-IV",
-    y        = "Dollar Change in GDP / Dollar Change in Spending",
-    x        = "Horizon, Quarters",
-    color    = "Regime\n(Shaded: 95% Newey-West CI)",
-    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
-    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
-  ) + 
-  # Theme 
-  theme_minimal() + 
-  theme(
-    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
-    axis.title = element_text(face = "bold")
-  )
-
-#### Low Progressivity Multiplier
-
-ggplot(low_prog_df_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
-  # Plotting the Zero Line
-  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
-  # Plotting 95% Confidence Intervals
-  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
-  # Plotting the Betas (mean) Lines 
-  geom_line(size = 1.2) + 
-  # Customing the colors (Blue High prog, Red Low prog)
-  scale_color_manual(values = c("Low Progressivity" = "red")) + 
-  scale_fill_manual (values = c("Low Progressivity" = "orangered")) +
-  # Lables and Titles
-  labs(
-    title    = "Government Spending Multipliers in $: LOW PROGRESSIVITY",
-    subtitle = "Smooth Transition LP-IV",
-    y        = "Dollar Change in GDP / Dollar Change in Spending",
-    x        = "Horizon, Quarters",
-    color    = "Regime\n(Shaded: 95% Newey-West CI)",
-    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
-    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
-  ) + 
-  # Theme 
-  theme_minimal() + 
-  theme(
-    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
-    axis.title = element_text(face = "bold")
-  )
-
-# this gives the exact OPPOSIT result wrt the other, and wrt the Ferriere & Navarro paper
-# --> Interpretation: Low progressivity funded Goverment spending increases have positive and significant  multipliers
-# and on the other hand the high progressivity ones are statistically equal to 0
-
-# Why I have obtain this result?
-# --> Econometric Puzzle!
-# see notes on "Bozza Struttura Progetto" Folder
-# mm boh, non so se usare sta roba, un po' strano
-
-
-##################################### 2) OVER IDENFITICATION STLP-IV 
+#################################### 2) OVER IDENFITICATION STLP-IV 
 
 # I need to create the "optimal Instrument" that combine both my instruments
 
 # gov ~ RZ + BP + [All Controls]
-full_formula <- as.formula(paste("gov ~ RZ + BP +", paste(controls_list, collapse = " + ")))
+full_formula <- as.formula(paste("gov ~ RZ + BP_Clean +", paste(controls_list, collapse = " + ")))
 
 # Run the First Stage Regression
 first_stage_model <- lm(full_formula, data = df_lp)
@@ -678,18 +470,5 @@ ggplot(scaled_multipliers_2regimes_OVERID, aes(x = Horizon, y = Mean, color = Re
     axis.title = element_text(face = "bold")
   )
 
-### e adesso cosa faccio? i multipliers sono uguali, e se utilizzo i CI al 95% posso dire che sono uguali a 0
-# but this is complitely against the findings of F&N: they claim that separately using the 
-# two shocks they yeild almost the same result 2) in their main paper (not in the appendix)
-# they show the results from the over identified local projections (which is in line with my 
-# result from the soecification with just the RZ instrument) 3) I have a specification that 
-# yield their results, but is a different specification wrt their, and my other specifications 
-# are complitely different, the just identified by BP specification yields the right oposit 
-# result and the over identified one, the specification with the optima instrument gives that there is
-# no heterogeneity and at the 9% level there is no multiplier
+# Also here it doesn't work
 
-# ok, the source of the problem is that I am using the "dirty" BP shock, 
-# F&N they cleaned it --> I have to clean the BP shock
-
-plot(BP)
-plot(RZ)
