@@ -305,7 +305,7 @@ ggplot(scaled_multipliers_2regimes, aes(x = Horizon, y = Mean, color = Regime, f
   theme(
     legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
     axis.title = element_text(face = "bold")
-  )
+)
 
 
 #### High Progressivity Multiplier
@@ -411,14 +411,215 @@ plot(STLP_GOV)
 
 
 
+######### Now I would like to do two different thins:
+# 1) Run the STLP-IV using the BP shock and check, if they exists, the differences whith
+# the one computed with the BZ shock
+
+# 2) Try to run the Over-Identified STLP-IV, and check the differences
+
+# -->
+
+# 1) STLP-IV with BP Shock
+
+
+STLP_IV_BP <- lp_nl_iv(
+  
+  # --- Variables ---
+  endog_data      = df_lp[, "gdp", drop = FALSE],
+  lags_endog_nl   = 0,                           
+  
+  shock           = df_lp[, "gov", drop = FALSE],
+  instr           = df_lp[, "BP",  drop = FALSE],
+  
+  # --- Controls ---
+  contemp_data    = df_lp[, controls_list],
+  
+  # --- Smooth Transition ---
+  switching       = df_lp[, "gamma_z", drop = FALSE],
+  use_logistic    = TRUE,
+  gamma           = 3,
+  lag_switching   = FALSE,
+  
+  # --- Settings ---
+  use_hp          = FALSE,
+  lambda          = NaN,
+  trend           = 0,
+  cumul_mult      = TRUE,
+  confint         = 1.96, # Confidence Interval
+  hor             = 20   # Number of h Horizon of the projecting
+)
+
+
+# Now I need to collect the parameters of the IRF of the 
+#                   Regime 1 (Low-Progressivity)
+
+low_prog_df_BP <- data.frame(
+  Horizon = 0:(length(STLP_IV_BP$irf_s1_mean) - 1),
+  Mean    = as.numeric(STLP_IV_BP$irf_s1_mean) * scaling_factor_GDP_GOV, # Mean --> the Beta coefficients
+  Lower   = as.numeric(STLP_IV_BP$irf_s1_low)  * scaling_factor_GDP_GOV, # Low  --> the lower bound of the 95% CI
+  Upper   = as.numeric(STLP_IV_BP$irf_s1_up)   * scaling_factor_GDP_GOV, # High --> the upper bound of the 95% CI
+  Regime  = "Low Progressivity"
+)
+
+#                   Regime 2 (High-Progressivity)
+
+high_prog_df_BP <- data.frame(
+  Horizon = 0:(length(STLP_IV_BP$irf_s2_mean) - 1),
+  Mean    = as.numeric(STLP_IV_BP$irf_s2_mean) * scaling_factor_GDP_GOV,
+  Lower   = as.numeric(STLP_IV_BP$irf_s2_low)  * scaling_factor_GDP_GOV,
+  Upper   = as.numeric(STLP_IV_BP$irf_s2_up)   * scaling_factor_GDP_GOV,
+  Regime  = "High Progressivity"
+)
+
+scaled_multipliers_2regimes_BP <- bind_rows(low_prog_df_BP, high_prog_df_BP)
+
+# Plotting the two regimes multipliers into a single one image
+
+ggplot(scaled_multipliers_2regimes_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+  # Plotting the Zero Line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Plotting 95% Confidence Intervals
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
+  # Plotting the Betas (mean) Lines 
+  geom_line(size = 1.2) + 
+  # Customing the colors (Blue High prog, Red Low prog)
+  scale_color_manual(values = c("High Progressivity" = "blue", "Low Progressivity" = "red")) + 
+  scale_fill_manual (values = c("High Progressivity" = "royalblue2", "Low Progressivity" = "orangered")) +
+  # Lables and Titles
+  labs(
+    title    = "Government Spending Multipliers in $",
+    subtitle = "Smooth Transition LP-IV",
+    y        = "Dollar Change in GDP / Dollar Change in Spending",
+    x        = "Horizon, Quarters",
+    color    = "Regime\n(Shaded: 95% Newey-West CI)",
+    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
+    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
+  ) + 
+  # Theme 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(face = "bold")
+  )
+
+# this gives the exact OPPOSIT result wrt the other, and wrt the Ferriere & Navarro paper
+# --> Interpretation: Low progressivity funded Goverment spending increases have positive and significant  multipliers
+# and on the other hand the high progressivity ones are statistically equal to 0
+
+# Why I have obtain this result?
 
 
 
+#### High Progressivity Multiplier
+
+ggplot(high_prog_df_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+  # Plotting the Zero Line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Plotting 95% Confidence Intervals
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
+  # Plotting the Betas (mean) Lines 
+  geom_line(size = 1.2) + 
+  # Customing the colors (Blue High prog, Red Low prog)
+  scale_color_manual(values = c("High Progressivity" = "blue")) + 
+  scale_fill_manual (values = c("High Progressivity" = "royalblue2")) +
+  # Lables and Titles
+  labs(
+    title    = "Government Spending Multipliers in $: HIGH PROGRESSIVITY",
+    subtitle = "Smooth Transition LP-IV",
+    y        = "Dollar Change in GDP / Dollar Change in Spending",
+    x        = "Horizon, Quarters",
+    color    = "Regime\n(Shaded: 95% Newey-West CI)",
+    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
+    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
+  ) + 
+  # Theme 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(face = "bold")
+  )
+
+#### Low Progressivity Multiplier
+
+ggplot(low_prog_df_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+  # Plotting the Zero Line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Plotting 95% Confidence Intervals
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
+  # Plotting the Betas (mean) Lines 
+  geom_line(size = 1.2) + 
+  # Customing the colors (Blue High prog, Red Low prog)
+  scale_color_manual(values = c("Low Progressivity" = "red")) + 
+  scale_fill_manual (values = c("Low Progressivity" = "orangered")) +
+  # Lables and Titles
+  labs(
+    title    = "Government Spending Multipliers in $: LOW PROGRESSIVITY",
+    subtitle = "Smooth Transition LP-IV",
+    y        = "Dollar Change in GDP / Dollar Change in Spending",
+    x        = "Horizon, Quarters",
+    color    = "Regime\n(Shaded: 95% Newey-West CI)",
+    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
+    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
+  ) + 
+  # Theme 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(face = "bold")
+  )
+
+# this gives the exact OPPOSIT result wrt the other, and wrt the Ferriere & Navarro paper
+# --> Interpretation: Low progressivity funded Goverment spending increases have positive and significant  multipliers
+# and on the other hand the high progressivity ones are statistically equal to 0
+
+# Why I have obtain this result?
+# --> Econometric Puzzle!
+# see notes on "Bozza Struttura Progetto" Folder
+# mm boh, non so se usare sta roba, un po' strano
 
 
+##################################### 2) OVER IDENFITICATION STLP-IV 
+
+# I need to create the "optimal Instrument" that combine both my instruments
+
+# gov ~ RZ + BP + [All Controls]
+full_formula <- as.formula(paste("gov ~ RZ + BP +", paste(controls_list, collapse = " + ")))
+
+# Run the First Stage Regression
+first_stage_model <- lm(full_formula, data = df_lp)
+
+# Store the 'Optimal Instrument' (Fitted Values)
+df_lp$Optimal_Instrument <- fitted(first_stage_model)
+
+####### DA FINIRE DI SMANETTARE
 
 
+STLP_IV_OVERID <- lp_nl_iv(
+  
+  # --- Variables ---
+  endog_data      = df_lp[, "gdp", drop = FALSE],
+  lags_endog_nl   = 0,                           
+  
+  shock           = df_lp[, "gov", drop = FALSE],
+  instr           = df_lp[, "Optimal_Instrument",  drop = FALSE],
+  
+  # --- Controls ---
+  contemp_data    = df_lp[, controls_list],
+  
+  # --- Smooth Transition ---
+  switching       = df_lp[, "gamma_z", drop = FALSE],
+  use_logistic    = TRUE,
+  gamma           = 3,
+  lag_switching   = FALSE,
+  
+  # --- Settings ---
+  use_hp          = FALSE,
+  lambda          = NaN,
+  trend           = 0,
+  cumul_mult      = TRUE,
+  confint         = 1.96, # Confidence Interval
+  hor             = 20   # Number of h Horizon of the projecting
+)
 
-
-
-
+# Summary of the STLP-IV
+summary(STLP_IV)
