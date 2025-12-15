@@ -3,7 +3,7 @@ data <- read.csv("Dataset/DATA_MACRO_FN.csv")
 
 GDP           <- ts(data$GDP, start = c(1913, 2), frequency = 4)
 GOV           <- ts(data$GOV, start = c(1913, 2), frequency = 4)
-NEWS          <- ts(data$NEWS, start = c(1913, 2), frequency = 4)
+RZ            <- ts(data$NEWS, start = c(1913, 2), frequency = 4)
 MTR           <- ts(data$MTR, start = c(1913, 2), frequency = 4)
 ATR           <- ts(data$ATR, start = c(1913, 2), frequency = 4)
 
@@ -622,4 +622,74 @@ STLP_IV_OVERID <- lp_nl_iv(
 )
 
 # Summary of the STLP-IV
-summary(STLP_IV)
+summary(STLP_IV_OVERID)
+
+plot(STLP_IV_OVERID)
+# the two impulse responses look equal.. let's see what happens with the dollar multiplier
+
+#                   Regime 1 (Low-Progressivity)
+
+low_prog_df_OVERID <- data.frame(
+  Horizon = 0:(length(STLP_IV_OVERID$irf_s1_mean) - 1),
+  Mean    = as.numeric(STLP_IV_OVERID$irf_s1_mean) * scaling_factor_GDP_GOV, # Mean --> the Beta coefficients
+  Lower   = as.numeric(STLP_IV_OVERID$irf_s1_low)  * scaling_factor_GDP_GOV, # Low  --> the lower bound of the 95% CI
+  Upper   = as.numeric(STLP_IV_OVERID$irf_s1_up)   * scaling_factor_GDP_GOV, # High --> the upper bound of the 95% CI
+  Regime  = "Low Progressivity"
+)
+
+#                   Regime 2 (High-Progressivity)
+
+high_prog_df_OVERID <- data.frame(
+  Horizon = 0:(length(STLP_IV_OVERID$irf_s2_mean) - 1),
+  Mean    = as.numeric(STLP_IV_OVERID$irf_s2_mean) * scaling_factor_GDP_GOV,
+  Lower   = as.numeric(STLP_IV_OVERID$irf_s2_low)  * scaling_factor_GDP_GOV,
+  Upper   = as.numeric(STLP_IV_OVERID$irf_s2_up)   * scaling_factor_GDP_GOV,
+  Regime  = "High Progressivity"
+)
+
+scaled_multipliers_2regimes_OVERID <- bind_rows(low_prog_df_OVERID, high_prog_df_OVERID)
+
+# Plotting the two regimes multipliers into a single one image
+
+ggplot(scaled_multipliers_2regimes_OVERID, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+  # Plotting the Zero Line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Plotting 95% Confidence Intervals
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, color = NA) + 
+  # Plotting the Betas (mean) Lines 
+  geom_line(size = 1.2) + 
+  # Customing the colors (Blue High prog, Red Low prog)
+  scale_color_manual(values = c("High Progressivity" = "blue", "Low Progressivity" = "red")) + 
+  scale_fill_manual (values = c("High Progressivity" = "royalblue2", "Low Progressivity" = "orangered")) +
+  # Lables and Titles
+  labs(
+    title    = "Government Spending Multipliers in $",
+    subtitle = "Smooth Transition LP-IV",
+    y        = "Dollar Change in GDP / Dollar Change in Spending",
+    x        = "Horizon, Quarters",
+    color    = "Regime\n(Shaded: 95% Newey-West CI)",
+    fill     = "Regime\n(Shaded: 95% Newey-West CI)",
+    caption = paste0("Scaled by 1913-2006 avg GDP/GOV ratio")
+  ) + 
+  # Theme 
+  theme_minimal() + 
+  theme(
+    legend.position = "bottom", plot.title = element_text(face = "bold", size = 14),
+    axis.title = element_text(face = "bold")
+  )
+
+### e adesso cosa faccio? i multipliers sono uguali, e se utilizzo i CI al 95% posso dire che sono uguali a 0
+# but this is complitely against the findings of F&N: they claim that separately using the 
+# two shocks they yeild almost the same result 2) in their main paper (not in the appendix)
+# they show the results from the over identified local projections (which is in line with my 
+# result from the soecification with just the RZ instrument) 3) I have a specification that 
+# yield their results, but is a different specification wrt their, and my other specifications 
+# are complitely different, the just identified by BP specification yields the right oposit 
+# result and the over identified one, the specification with the optima instrument gives that there is
+# no heterogeneity and at the 9% level there is no multiplier
+
+# ok, the source of the problem is that I am using the "dirty" BP shock, 
+# F&N they cleaned it --> I have to clean the BP shock
+
+plot(BP)
+plot(RZ)
