@@ -7,24 +7,10 @@ RZ            <- ts(data$NEWS, start = c(1913, 2), frequency = 4)
 MTR           <- ts(data$MTR, start = c(1913, 2), frequency = 4)
 ATR           <- ts(data$ATR, start = c(1913, 2), frequency = 4)
 
-
 ts_data = ts(data, start = c(1913, 2), frequency = 4)
 
-library(dynlm)
 
-# If I use the library(dynlm) package, I can directly estimate this Dynamic Linear Regression
-# in a single row
-# --> d() = first difference --> L( d() , 1:4) from t to t-4 using the Lag operator
-
-bp_model_raw <- dynlm(d(log(GOV)) ~ L(d(log(GOV)), 1:4) + L(d(log(GDP)), 1:4) ,
-                      data = ts_data)
-# Store the raw residuals --> the "raw" BP shock
-BP <- residuals(bp_model_raw)
-
-plot(BP)
-
-
-# I order to build my Smooth Transition Local Projection estimator I need to build the
+# In order to build my Smooth Transition Local Projection estimator I need to build the
 # "State" variable, the gamma (referring to the Navarro's paper names)
 
 gamma_raw = (MTR - ATR) / (1-ATR)
@@ -116,6 +102,47 @@ t_2 <- time_index^2
 t_3 <- time_index^3
 t_4 <- time_index^4
 
+
+#####################     Creating the BP Shock from a trivariate SVAR       #######################
+library(vars)
+Tax <- MTR * GDP
+tax <- log(Tax)
+tax_d <- diff((tax))
+plot(tax_d)
+var_data_ts <- ts.intersect(gov_d, gdp_d, tax_d)
+# converting this into a data fram
+var_data_df <- as.data.frame(var_data_ts)
+
+# now let's run the Reduced From VAR with 4 lags
+
+RF_VAR_BP <- VAR(var_data_df, p = 4, type = "const")
+# Since Gov ('dg') is the FIRST variable, its orthogonalized shock is
+# identical to its raw residual. We don't need SVAR() to prove this.
+BP_Shock_Raw <- residuals(RF_VAR_BP)[, "gov_d"]
+
+# Convert to Time Series with Correct Frequency
+# The residuals start 4 quarters AFTER the data used in the VAR (due to 4 lags).
+# We assume var_data_ts has the correct start/frequency
+
+start_res <- tsp(var_data_ts)[1] + 4/4 # Shift start date forward by 1 year (4 quarters)
+BP_Shock_TS <- ts(BP_Shock_Raw, start = start_res, frequency = 4)
+plot(BP_Shock_Raw)
+
+
+# now I need to "Orthogonalize" the BP shock, I need to "remove" the "Anticipated" portion
+# of the shock leaving just the "Unanticipated" one
+####### How? by regressing the the residuals of the SVAR on the NEWS (RZ) Shock
+# colletting the resituals of this regression I'm extracting just the uncorrelated part of the BP
+# shock from the RZ variable
+
+aligned_data <- ts.intersect(BP_Shock_TS, RZ = ts_data[, "NEWS"])
+
+BP_Orthogonalized_Model <- lm(BP_Shock_TS ~ RZ, data = aligned_data)
+
+
+BP_Orthogonalides <- residuals(BP_Orthogonalized_Model)
+BP <- ts(BP_Orthogonalides, start = start(aligned_data), frequency = frequency(aligned_data))
+plot(BP)
 
 #### Combining everything in a dataset with all the variable that I need for my STLP_IV
 # adding the GDP and GOV in levels as they are needed to create the multipliers variables
@@ -346,9 +373,9 @@ ggplot(low_prog_df_RZ, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)
 
 ## OTHER SPECIFICATIONS
 
-############################### SPECIFICATION 2 : JUST BP (raw) INSTRUMENT ################################
+############################### SPECIFICATION 2 : JUST BP (Orthogonalized) INSTRUMENT ################################
 
-STLP_IV_BP_raw <- lp_nl_iv(
+STLP_IV_BP <- lp_nl_iv(
   
   # --- Variables ---
   endog_data      = df_lp[, "gdp", drop = FALSE],
@@ -379,29 +406,29 @@ STLP_IV_BP_raw <- lp_nl_iv(
 # Now I need to collect the parameters of the IRF of the 
 #                   Regime 1 (Low-Progressivity)
 
-low_prog_df_BP_raw <- data.frame(
-  Horizon = 0:(length(STLP_IV_BP_raw$irf_s1_mean) - 1),
-  Mean    = as.numeric(STLP_IV_BP_raw$irf_s1_mean) * scaling_factor_GDP_GOV, # Mean --> the Beta coefficients
-  Lower   = as.numeric(STLP_IV_BP_raw$irf_s1_low)  * scaling_factor_GDP_GOV, # Low  --> the lower bound of the 95% CI
-  Upper   = as.numeric(STLP_IV_BP_raw$irf_s1_up)   * scaling_factor_GDP_GOV, # High --> the upper bound of the 95% CI
+low_prog_df_BP <- data.frame(
+  Horizon = 0:(length(STLP_IV_BP$irf_s1_mean) - 1),
+  Mean    = as.numeric(STLP_IV_BP$irf_s1_mean) * scaling_factor_GDP_GOV, # Mean --> the Beta coefficients
+  Lower   = as.numeric(STLP_IV_BP$irf_s1_low)  * scaling_factor_GDP_GOV, # Low  --> the lower bound of the 95% CI
+  Upper   = as.numeric(STLP_IV_BP$irf_s1_up)   * scaling_factor_GDP_GOV, # High --> the upper bound of the 95% CI
   Regime  = "Low Progressivity"
 )
 
 #                   Regime 2 (High-Progressivity)
 
-high_prog_df_BP_raw <- data.frame(
-  Horizon = 0:(length(STLP_IV_BP_raw$irf_s2_mean) - 1),
-  Mean    = as.numeric(STLP_IV_BP_raw$irf_s2_mean) * scaling_factor_GDP_GOV,
-  Lower   = as.numeric(STLP_IV_BP_raw$irf_s2_low)  * scaling_factor_GDP_GOV,
-  Upper   = as.numeric(STLP_IV_BP_raw$irf_s2_up)   * scaling_factor_GDP_GOV,
+high_prog_df_BP <- data.frame(
+  Horizon = 0:(length(STLP_IV_BP$irf_s2_mean) - 1),
+  Mean    = as.numeric(STLP_IV_BP$irf_s2_mean) * scaling_factor_GDP_GOV,
+  Lower   = as.numeric(STLP_IV_BP$irf_s2_low)  * scaling_factor_GDP_GOV,
+  Upper   = as.numeric(STLP_IV_BP$irf_s2_up)   * scaling_factor_GDP_GOV,
   Regime  = "High Progressivity"
 )
 
-scaled_multipliers_2regimes_BP_raw <- bind_rows(low_prog_df_BP_raw, high_prog_df_BP_raw)
+scaled_multipliers_2regimes_BP <- bind_rows(low_prog_df_BP, high_prog_df_BP)
 
 # Plotting the two regimes multipliers into a single one image
 
-ggplot(scaled_multipliers_2regimes_BP_raw, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+ggplot(scaled_multipliers_2regimes_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
   # Plotting the Zero Line
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
   # Plotting 95% Confidence Intervals
@@ -435,7 +462,7 @@ ggplot(scaled_multipliers_2regimes_BP_raw, aes(x = Horizon, y = Mean, color = Re
 
 #### High Progressivity Multiplier 
 
-ggplot(high_prog_df_BP_raw, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+ggplot(high_prog_df_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
   # Plotting the Zero Line
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
   # Plotting 95% Confidence Intervals
@@ -464,7 +491,7 @@ ggplot(high_prog_df_BP_raw, aes(x = Horizon, y = Mean, color = Regime, fill = Re
 
 #### Low Progressivity Multiplier
 
-ggplot(low_prog_df_BP_raw, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
+ggplot(low_prog_df_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)) + 
   # Plotting the Zero Line
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
   # Plotting 95% Confidence Intervals
@@ -500,12 +527,10 @@ ggplot(low_prog_df_BP_raw, aes(x = Horizon, y = Mean, color = Regime, fill = Reg
 # see notes on "Bozza Struttura Progetto" Folder
 
 
-############################### SPECIFICATION 3 : JUST BP (clean) INSTRUMENT ################################
-
-## for the moment let's leve out the clean BP --> I have to think if use it or not
 
 
-############################### SPECIFICATION 3 : JUST BP (clean) INSTRUMENT ################################
+
+############# SPECIFICATION 3 : Over Identification RZ + BP (clean) INSTRUMENTS ###################
 # If I have two instruments, why don't I use it both!!
 # as Professor Dal Bianco tought me 
 # I need to create the "optimal Instrument" that combine both my instruments
@@ -612,7 +637,7 @@ ggplot(scaled_multipliers_2regimes_OVERID, aes(x = Horizon, y = Mean, color = Re
 
 ##################################################################################################
 
-########################## Think Locally... Project Globally !   #################################
+########################## Think Locally... Project Globally !!!   #################################
 
 
 
