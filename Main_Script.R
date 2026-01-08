@@ -32,10 +32,9 @@ plot(gamma)
 # Controls: lagged of growth rates of log GDP, lagged growth rates of gov, 
 # lagged Tax Rates (MTR), and non linear and non linear time trends (t,t^2,t^3,t^4)
 
-# I'm not going to create the dependent and endogenous variables as are written
-#in the Navarro's paper. --> In the first model specification I will use log GDP
+# In the first model specification I will use log GDP
 # and log GOV, hence I will obtain elasticities of the multipliers.
-# This meand that I will need to re convert the multipliers in dollars
+# This means that I will need to re convert the multipliers in dollars
 # I will need to scale them
 
 
@@ -181,9 +180,10 @@ LP_data <- ts.intersect(
 
 ##############################
 
-# Now is the tiem to build the STLP-IV
-# unfortunatly the lpirfs package doesn't work with over identification
-# problem, this that I'm computing are elasticities, later I have to re convert 
+# Now is the time to build the STLP-IV
+# unfortunately the lpirfs package doesn't work with over identification, hence I will need to create
+# the optimal instrument separatly
+# Remember that I'm computing are elasticities, later I have to re convert 
 # them in dollar terms
 
 
@@ -368,7 +368,8 @@ ggplot(low_prog_df_RZ, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)
     axis.title = element_text(face = "bold")
   )
 
-##################      Think Locally.. Project Globally!      ##################
+# Specification with NEWS shock is consistent with Ferriere&Navarro, different magnitute
+
 
 
 ## OTHER SPECIFICATIONS
@@ -458,6 +459,8 @@ ggplot(scaled_multipliers_2regimes_BP, aes(x = Horizon, y = Mean, color = Regime
 # this gives the exact OPPOSIT result wrt the other, and wrt the Ferriere & Navarro paper
 # --> Interpretation: Low progressivity funded Goverment spending increases have positive and significant  multipliers
 # and on the other hand the high progressivity ones are statistically equal to 0
+# With the Surprise Blanchard&Perotti shock the Progressivity channel disappears, agents need lack of foresight
+
 
 
 #### High Progressivity Multiplier 
@@ -524,7 +527,7 @@ ggplot(low_prog_df_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)
 
 # Why I have obtain this result?
 # --> Econometric Puzzle!
-# see notes on "Bozza Struttura Progetto" Folder
+# Lack of foresight of households
 
 
 
@@ -532,7 +535,7 @@ ggplot(low_prog_df_BP, aes(x = Horizon, y = Mean, color = Regime, fill = Regime)
 
 ############# SPECIFICATION 3 : Over Identification RZ + BP (clean) INSTRUMENTS ###################
 # If I have two instruments, why don't I use it both!!
-# as Professor Dal Bianco tought me 
+# as Professor Chiara Dal Bianco tought me 
 # I need to create the "optimal Instrument" that combine both my instruments
 
 # gov ~ RZ + BP + [All Controls]
@@ -633,6 +636,8 @@ ggplot(scaled_multipliers_2regimes_OVERID, aes(x = Horizon, y = Mean, color = Re
 # and my other specifications are complitely different, the just identified by BP specification 
 # yields the right opposit result and the over identified one, the specification with the optimal
 # instrument gives that there is no heterogeneity and at the 95% level there is no multiplier
+
+# Loss of identification of the progressivity channel
 
 
 ##################################################################################################
