@@ -650,4 +650,3 @@ ggplot(scaled_multipliers_2regimes_OVERID, aes(x = Horizon, y = Mean, color = Re
 
 
 
-
