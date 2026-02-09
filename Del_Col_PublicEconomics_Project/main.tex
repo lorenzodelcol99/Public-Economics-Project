@@ -64,10 +64,10 @@ In their view the distribution across households of the fiscal burden consequent
 They argue that how the spending is financed matters as much as the spending itself. 
 \\
 \cite{FN} developed a HANK model to analyze how the distribution of taxes across households shapes spending multipliers.
-The model yields empirically realistic distributions in Marginal Propensities to Consume and Labour Participation Elasticities, which result in lower responsiveness to tax changers for higher income earners.
+The model yields empirically realistic distributions in Marginal Propensities to Consume and Labour Participation Elasticities, which result in lower responsiveness to tax changes for higher income earners.
 \\
 By looking at the historical dimension, on average, U.S. spending shocks were financed with higher tax progressivity.
-But not every financing strategies were equal: wars like WWI, WWII, and Korea were financed by progressive tax reforms targeting high-income earners, whereas the Vietnam War and the Reagan defense buildup relied on proportional or regressive financing. The existance of historical variation in financing spending shocks allowed \cite{FN} to empirically test their results coming from the theoretical model, for doing so they estimated a progressivity dependent multiplier.
+But not every financing strategies were equal: wars like WWI, WWII, and Korea were financed by progressive tax reforms targeting high-income earners, whereas the Vietnam War and the Reagan defense buildup relied on proportional or regressive financing. The existence of historical variation in financing spending shocks allowed \cite{FN} to empirically test their results coming from the theoretical model, for doing so they estimated a progressivity dependent multiplier.
 
 
 
@@ -76,22 +76,22 @@ While \cite{FN} provide robust evidence using News shocks (anticipated spending)
 
 This project asks: Is the Progressivity Multiplier a general feature of fiscal policy, or does it depend on the information set of the agents?
 
-    Specifically, I investigate whether the high multipliers observed under progressive regimes persist when the spending shock is unanticipated, a Surprise shock. Using a Smooth Transition Instrumental Variable Local Projection (STLP-IV) approach, I test the sensitivity of the progressivity channel to three different identification strategies: the \cite{RameyZubairy2018} News shock, with an orthogonalized \cite{BP} Surprise shock, and with an Optimal Instrument that combines both shocks.
+    Specifically, I investigates whether the high multipliers observed under progressive regimes persist when the spending shock is unanticipated, a Surprise shock. Using a Smooth Transition Instrumental Variable Local Projection (STLP-IV) approach, I test the sensitivity of the progressivity channel to three different identification strategies: the \cite{RameyZubairy2018} News shock, with an orthogonalized \cite{BP} Surprise shock, and with an Optimal Instrument that combines both shocks.
 
 
 
 
 \section{Theoretical Framework}
-\cite{FN} created an HANK model to analyze how the distribution of taxes shapes spending multipliers. They exploit this by having a rich cross-sectional heterogeneity in marginal propensities to consume and labour supply elasticities which results in lower responsiveness to tax changers for higher-income earners.
+\cite{FN} created an HANK model to analyze how the distribution of taxes shapes spending multipliers. They exploit this by having a rich cross-sectional heterogeneity in marginal propensities to consume and labour supply elasticities which results in lower responsiveness to tax changes for higher-income earners.
 \\ 
-They find that implied multipliers are larger when spending is financed which an increase in tax progressivity, hence, spending is more expansionary when the tax burden falls more heavily on the higher-income earners.
+They find that implied multipliers are larger when spending is financed with an increase in tax progressivity, hence, spending is more expansionary when the tax burden falls more heavily on the higher-income earners.
 \\
-In the model's environment higher-income earners have exceptional labour market prospects ad thus they face a large opportunity cost of exing the labour market; for this reason the exhibit lower Labour Participation Elasticities, from now on (LPE).
+In the model's environment higher-income earners have exceptional labour market prospects and thus they face a large opportunity cost of exiting the labour market; for this reason the exhibit lower Labour Participation Elasticities, from now on (LPE).
 In addition, high discount factor households accumulate more wealth, are often further from their borrowing limits, they have lower Marginal Propensity to Consume (MPC).
 
 \cite{FN} finds that this heterogeneity in the LPE and MPC explains how the distribution of taxes shapes spending multipliers.
 That is; a government will rise taxes to finance an increase in spending, and higher taxes crowd out the private sector, which limits how expansionary spending can be. 
-Concentrating the higer taxes on the less responsive households, the higher-income ones, reduces the crowding-out effect, in turn increases spending multipliers.
+Concentrating the higher taxes on the less responsive households, the higher-income ones, reduces the crowding-out effect, in turn increases spending multipliers.
 
 Shifting taxes from the high-MPC to the low-MPC households boosts aggregate demand and thus increase multipliers \cite{FN}.
 Heterogeneity in LPE is also important as concentrating taxes on low-LPE workers reduces the crowding-out effect on labour supply, then in consumption.
@@ -123,7 +123,7 @@ subject to the budget constraint:
     h \in \{ 0, \bar{h} \}, \quad a^\prime \geq 0
 \end{equation}
 
-where $c$ and $h$ denote consumption and hours worked, $w^h_t$ denotes wages perceived by households, and $r_t$ denote the real return on households’ savings. 
+where $c$ and $h$ denotes consumption and hours worked, $w^h_t$ denotes wages perceived by households, and $r_t$ denotes the real return on households’ savings. 
 Households face a distortionary tax $\mathcal{T}_t(\cdot) \xrightarrow{} Tt(w^h_txh,r_ta)$ which
 depends on labour income $w^h_txh$ and capital earnings $r_ta$—and receive a lump-sum transfer $T:t$. Finally, $d^h_t(x)$ represents the dividend payments received from firms.
 
@@ -145,14 +145,14 @@ Following \cite{heathcote2017}, the tax function is modeled as $\mathcal{T}_t = 
     \label{eq:hsv_tax}
 \end{equation}
 
-For the Labour tax they assume a log-linear tax on labour income $y_l$ as $\tau_l(y_l) = 1 - \lambda y^{-\gamma}_l$. With only two parameters, this tax function feautures a remarkable fit to the U.S. federal income tax system:
+For the Labour tax they assume a log-linear tax on labour income $y_l$ as $\tau_l(y_l) = 1 - \lambda y^{-\gamma}_l$. With only two parameters, this tax function features a remarkable fit to the U.S. federal income tax system:
 \begin{itemize}
-    \item $\gamma_t$: Controls the \textbf{progressivity} of the tax scheme, describe the level of progressiveness (regressiveness).
+    \item $\gamma_t$: Controls the \textbf{progressivity} of the tax scheme, describes the level of progressiveness (regressiveness).
     \begin{itemize}
         \item If $\gamma = 0$, the tax rate is flat (constant).
         \item If $\gamma > 0$, the tax function implies a complete redistribution; after-tax labour income $y_l(1 - \tau_l(y_l)) = \lambda$ for any pre-tax income $y_t$. Hence the marginal tax rate increases with income (Progressive).
     \end{itemize}
-    \item $\lambda_t$: Controls the \textbf{level} of taxation (revenue). A decrease in $\lambda$ raises the average tax rate for all agents. When $\gamma = 0 $, the tax rate is flat at exactly $1 - \lambda$, hence, an increase in $1 - \lambda$ rises tax rates for all levels of income, while an increase in $\gamma$ makes tax rates higher for high-income and lower for lower-income households.
+    \item $\lambda_t$: Controls the \textbf{level} of taxation (revenue). A decrease in $\lambda$ raises the average tax rate for all agents. When $\gamma = 0 $, the tax rate is flat at exactly $1 - \lambda$, hence, an increase in $1 - \lambda$ raises tax rates for all levels of income, while an increase in $\gamma$ makes tax rates higher for high-income and lower for lower-income households.
 \end{itemize}
 
 
@@ -279,12 +279,12 @@ The basic specification is:
 \end{equation}
 
 Where $\Delta^hy_{t+h} = \frac{Y_{t+h}-Y_{t-1}}{Y_{t-1}}$ is GDP growth, and $\Delta^hg_{t+h} = \frac{G_{t+h}-G_{t-1}}{Y_{t-1}}$ is the adjusted-by-GDP increase in spending, $Z_t$ is the set of controls.
-For each horizon $h$, the coefficient $m_t$ measures the cumulative response of output to a $\$1$ increase in governement spending. 
+For each horizon $h$, the coefficient $m_t$ measures the cumulative response of output to a $\$1$ increase in government spending. 
 These multipliers has to be interpreted as \cite{Auerbach_Gorodnichenko_2012_Measuring}, they demonstrate by how many dollars GDP increases over time when government spending is increased by $1\$$. 
 \cite{FN} use a two stage least square estimator where cumulative spending growth is instrumented by a combination of the \cite{RameyZubairy2018} News Shock, and the \cite{BP} Surprise Shock.
 The control matrix $\bm{Z_t}$ include eight lags of GDP, government spending and the average marginal tax rate (AMTR); whereas the trend is quadratic.
 
-In the \cite{FN} linear word, see \textcolor{red}{Figure~\ref{fig:Figure9_Cumulative_Multipliers}} spending induces an output expansion, the multiplier yields a below unity result.
+In the \cite{FN} linear world, see \textcolor{red}{Figure~\ref{fig:Figure9_Cumulative_Multipliers}} spending induces an output expansion, the multiplier yields a below unity result.
 
 
 \subsubsection{Progressivity-Dependent Spending Multiplier}
@@ -292,7 +292,7 @@ In the \cite{FN} linear word, see \textcolor{red}{Figure~\ref{fig:Figure9_Cumula
 Using this linear specification they estimated and confirmed that the average tax response to a spending shock was progressive.
 But is known from the U.S. fiscal history that some war events i.e. Vietnam and Reagan defense buildup, were financed with a low progressive tax reform. 
 This historical variation motivates
-the focus on how the distribution fn taxes shapes spending multipliers.
+the focus on how the distribution on taxes shapes spending multipliers.
 
 The step that \cite{FN} take to pass in the empirical Non-Linear word is building this State-Dependent LP-IV:
 
@@ -308,7 +308,7 @@ The step that \cite{FN} take to pass in the empirical Non-Linear word is buildin
 
 
 Where, the crucial point is the $p_t$ variable that indicates the state of the word, that is; $P$ when the spending shock is financed via a "Progressive" taxation and the correspondent $N$ for the "Non-Progressive" state.
-To identify the state, \cite{FN} created a tax progressivity proxy as a function of  Average Marginal Tax Rat (AMRT) and Average Tax Rate (ATR), that is:
+To identify the state, \cite{FN} created a tax progressivity proxy as a function of  Average Marginal Tax Rate (AMRT) and Average Tax Rate (ATR), that is:
 
 \begin{equation}
     \gamma \equiv (AMTR - ATR)/(1-ATR)
@@ -353,7 +353,7 @@ For these reasons, we propose an alternative specification and
 estimate the Spending Multiplier on the \cite{FN} dataset by implementing a Smooth Transition Instrumental Variable Local Projections approach (STLP-IV) applying the \cite{GrangerTerasvirtaAnderson1993} Smooth Transition structure combined with LP-IV à la \cite{Jordà2005, JordàTaylo2025LP-IV}.
 
 \subsection{STLP-IV}
-We estimate the State-Dependent Impulse Response Functions by projecting the cumulative growth of output on the instrumented government spending shock, allowing coefficients to vary according to the state of the economy. As we are using natural logarithms, this allow us to interpret the estimated coefficients as elasticities, which after are going to be used to retrive the multipliers.
+We estimate the State-Dependent Impulse Response Functions by projecting the cumulative growth of output on the instrumented government spending shock, allowing coefficients to vary according to the state of the economy. As we are using natural logarithms, this allows us to interpret the estimated coefficients as elasticities, which after are going to be used to retrieve the multipliers.
 Following \cite{Ascari}, the baseline specification is:
 
 \begin{align}
@@ -392,8 +392,8 @@ Since the coefficients $\beta^H_{h}$ and $\beta^L_{h}$ represent elasticities, w
 
 This transformation yields the dollar change in GDP resulting from a \$1 change in government spending.
 
-\subsection{Restuls}
-As \cite{FN} claims that their LP-IV delivers similar results for both the instruments used in isolation and also when  used in over identification, we want to test these three different specifications with out \eqref{eq:STLP-IV_BasicModel} STLP-IV estimator.
+\subsection{Results}
+As \cite{FN} claims that their LP-IV delivers similar results for both the instruments used in isolation and also when  used in over identification, we want to test these three different specifications with our \eqref{eq:STLP-IV_BasicModel} STLP-IV estimator.
 \\
 We now present the estimated cumulative multipliers. The central question of this project is whether the "Progressivity Premium" found by \cite{FN} is a general feature of fiscal policy or if it depends on the nature of the shock, Anticipated vs. Unanticipated.
 
@@ -409,8 +409,8 @@ Our results strongly corroborate the findings of \cite{FN}.
     \item \textbf{Low Progressivity:} The multiplier is negligible and statistically indistinguishable from zero across all horizons.
 \end{itemize}
 
-Unlike the binary classification in \cite{FN}, which averages all episodes above a certain treshold, the smooth transition approach estimates the multiplier at the extreme limit of the transition function $F(z_t) \xrightarrow{}1$.
-As noted by \cite{Auerbach_Gorodnichenko_2012_Measuring} these estimates should be interpreted as bounds for a polar settings, representing the theoretical maximum effect of a spending shock financed by an extrimely progressive tax schedule. We interpret the large (2.7) peak of the estimated multiplier in the High-Progressivity state in the ligth of this.
+Unlike the binary classification in \cite{FN}, which averages all episodes above a certain threshold, the smooth transition approach estimates the multiplier at the extreme limit of the transition function $F(z_t) \xrightarrow{}1$.
+As noted by \cite{Auerbach_Gorodnichenko_2012_Measuring} these estimates should be interpreted as bounds for a polar settings, representing the theoretical maximum effect of a spending shock financed by an extremely progressive tax schedule. We interpret the large (2.7) peak of the estimated multiplier in the High-Progressivity state in the light of this.
 \\
 The economic intuition behind this could be that in the polar state, the tax burden on the median household is effectivily zero.
 Consequently, the large wealth effect from the government demand shock, higher wages, is not offset by expected taxes, leading to a strong crowding-in of consumption that amplifies the multiplier well above unity. 
@@ -419,7 +419,7 @@ This confirms that the STLP estimator captures the same economic dynamics as the
 
 \subsection{Specification 2: The Surprise Channel}
 Does this mechanism persist when agents lack foresight? \textcolor{red}{Figures~\ref{fig:Orth_BP_NonLinear_Multipl_LDC},
-\ref{fig:Orth_BP_NonLinear_HighProg_Multipl_LDC}, and \ref{fig:Orth_BP_NonLinear_LowProg_Multipl_LDC} } presents the multipliers estimated using the Orthogonalized Surprise \cite{BP} shock. This shock represents pure surprises, cleaned of any anticipated components.
+\ref{fig:Orth_BP_NonLinear_HighProg_Multipl_LDC}, and \ref{fig:Orth_BP_NonLinear_LowProg_Multipl_LDC} } present the multipliers estimated using the Orthogonalized Surprise \cite{BP} shock. This shock represents pure surprises, cleaned of any anticipated components.
 \\
 To ensure a rigorous separation between Anticipated and Unanticipated effects, it is critical that the structural Surprise shock \cite{BP} represents a pure surprise, uncontaminated by the information contained in the News series.
 
@@ -427,7 +427,7 @@ Standard SVAR identification assumes that government spending does not respond t
 
 To address this, we clean the BP shock by orthogonalizing it with respect to the \cite{RameyZubairy2018} News variable. 
 
-Following \cite{BP} we retrive the Surprise shock with a trivariate VAR via Cholesky decomposition, with ordering Government Spending first, then GDP and Taxes. This ordering imposes the restriction that government spending does not respond contemporaneously to shocks in output or taxes.
+Following \cite{BP} we retrieve the Surprise shock with a trivariate VAR via Cholesky decomposition, with ordering Government Spending first, then GDP and Taxes. This ordering imposes the restriction that government spending does not respond contemporaneously to shocks in output or taxes.
 
 Next, we regress the recovered structural shock $\epsilon^{BP}_t$ on the military news variable:
 
@@ -436,7 +436,7 @@ Next, we regress the recovered structural shock $\epsilon^{BP}_t$ on the militar
     \label{eq:orthogonalization}
 \end{equation}
 
-The residual from this regression, $\nu_t$, captures the variation in government spending that is uncorrelated with the News shock. The estimated orthogonalized series $\hat\nu^{OBP}_t$ serves as the Clean Surprise, the Orthogonlized \cite{BP} instrument in my STLP-IV estimations.
+The residual from this regression, $\nu_t$, captures the variation in government spending that is uncorrelated with the News shock. The estimated orthogonalized series $\hat\nu^{OBP}_t$ serves as the Clean Surprise, the Orthogonalized \cite{BP} instrument in my STLP-IV estimations.
 
 The results point to a crucial divergence. As shown in \textcolor{red}{Figures~\ref{fig:Orth_BP_NonLinear_Multipl_LDC}, and \ref{fig:Orth_BP_NonLinear_HighProg_Multipl_LDC}, and \ref{fig:Orth_BP_NonLinear_LowProg_Multipl_LDC}}:
 \begin{itemize}
@@ -451,7 +451,7 @@ Finally, I employ an Optimal Instrument approach following \cite{MostlyHarmlessE
 As displayed in \textcolor{red}{Figures~\ref{fig:Optimal_Instrument_(RZ+BP)_NonLinear_LDC}}, pooling the instruments results in a loss of identification for the progressivity channel. The multipliers in both regimes are low and statistically insignificant at the $95\%$ level. This suggests that the "Surprise" component dominates the variation, washing out the heterogeneity driven by the "News" component.
 
 \section{Conclusion}
-This project investigate the transmission mechanism of government spending multiplier under varying regimes of tax progressivity.
+This project investigates the transmission mechanism of government spending multiplier under varying regimes of tax progressivity.
 \\
 Extending the empirical work of \cite{FN}, we employed a Smooth Transition Instrumental Variable Local Projection approach to test whether the progressive premium holds across different identification strategy.
 \\
@@ -459,7 +459,7 @@ While \cite{FN} argue that "It's All About Taxes," our findings suggest a refine
 \\
 Our results confirmed that high tax progressivity boosts fiscal multipliers to a peak of $\approx 2.7$ after $10$ quarters, but only when the spending is anticipated. For unanticipated shocks, the progressivity of the tax code is irrelevant. 
 \\
-This discrepancy highligths that the transmission mechanism is not mechanical; it relies fundamentally on an expectations channel. As argued by \cite{Ascari}, fiscal foresight changes the information set available to agents, allowing them to adjust their behaviour in anticipation of future policy.
+This discrepancy highlights that the transmission mechanism is not mechanical; it relies fundamentally on an expectations channel. As argued by \cite{Ascari}, fiscal foresight changes the information set available to agents, allowing them to adjust their behaviour in anticipation of future policy.
 
 This implies that policymakers aiming to maximize the stimulus effect of progressive taxation must prioritize clear communication and forward guidance to activate the expectations channel.
 
@@ -487,7 +487,7 @@ The repository contains:
     \item \texttt{R\_Images\_LDC}: The folder containing the high-resolution output plots.
 \end{itemize}
 
-\section{Apendix}
+\section{Appendix}
 
 %FN Images
 
@@ -566,7 +566,7 @@ The repository contains:
 \begin{figure}
     \centering
     \includegraphics[width=1\linewidth]{R_Images_LDC/Optimal_Instrument_(RZ+BP)_NonLinear_LDC.pdf}
-    \caption{Non Linear Spending Multiplier estimated by STLP-IV under Over Identification with the Optimal Instrument composed by the  Orthogonalized \cite{BP} and News \cite{RameyZubairy2018} Shoks}
+    \caption{Non Linear Spending Multiplier estimated by STLP-IV under Over Identification with the Optimal Instrument composed by the  Orthogonalized \cite{BP} and News \cite{RameyZubairy2018} Shocks}
     \label{fig:Optimal_Instrument_(RZ+BP)_NonLinear_LDC}
 \end{figure}
 
