@@ -131,7 +131,7 @@ plot(BP_Shock_Raw)
 # now I need to "Orthogonalize" the BP shock, I need to "remove" the "Anticipated" portion
 # of the shock leaving just the "Unanticipated" one
 ####### How? by regressing the the residuals of the SVAR on the NEWS (RZ) Shock
-# colletting the resituals of this regression I'm extracting just the uncorrelated part of the BP
+# collecting the residuals of this regression I'm extracting just the uncorrelated part of the BP
 # shock from the RZ variable
 
 aligned_data <- ts.intersect(BP_Shock_TS, RZ = ts_data[, "NEWS"])
